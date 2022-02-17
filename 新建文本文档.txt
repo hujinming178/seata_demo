@@ -1,0 +1,350 @@
+ 
+/*
+题目描述
+有下面一个图
+图的各个顶点之间只有唯一的道路相连，而且任顶点都是可以互达的，
+解答要求
+时间限制：1000ms, 内存限制：64MB
+输入
+每个样例输入：
+第一行两个正整数N，Q，图有N个顶点，有Q个询问。其中1 <= N,Q <= 100
+第二行到第N行，每行三个整数u,v,z，表示顶点u到顶点v的距离为z，表示顶点u与顶点v相连，边的权值为z。其中 1 <= u,v <= N, 1<= z <= 1000
+接下来Q行，每行两个数字x,y，表示有人想知道顶点x到顶点y的距离是多少。其中1 <= x,y <= N
+输出
+对于每一个询问，输出一行，即x家到y家的距离。
+样例
+输入样例 1 复制
+3 2
+1 2 10
+3 1 15
+1 2
+2 3
+2 2
+1 2 100
+1 2
+2 1
+输出样例 1
+10
+25
+100
+100
+提示
+最近公共祖先，dfs过程中维护每个点到根节点的距离，然后dis[u,v] = dis[u,root] + dis[v,root] - 2*dis[LCA(u,v),root]
+解释：
+图的各个顶点之间只有唯一的道路相连，而且任顶点都是可以互达的，
+这个图是无向无环图 （或者可以看成一个有根的树）
+*/
+ 
+ 
+#include <stdio.h>
+#include "securec.h"
+ 
+ 
+/*
+下面构造一个环形队列的数据结构
+*/
+#define MAXQSIZE 100    
+#define QElemType int
+typedef struct SqQueue{
+    QElemType *base;
+    int front;
+    int rear;
+}Queue; // Queue 就是环形队列类型
+ 
+int InitQueue(Queue *Q) 
+{ // 构造环形队列Q，空队列
+    Q->base = (QElemType*)malloc(sizeof(QElemType) * MAXQSIZE);
+    if(Q->base == NULL) {
+        return -1;
+    }
+    Q->front = Q->rear = 0;
+    return 0;
+}
+ 
+int DeleteQueue(Queue *Q)
+{
+    free(Q->base);
+    Q->base = NULL;
+    return 0;
+}
+ 
+int GetQueueLen(Queue *Q)
+{ // 返回队列Q中的元素个数，即队列的当前长度
+    return (Q->rear - Q->front + MAXQSIZE) % MAXQSIZE;
+}
+ 
+// 队空返回1(true),队不空，返回0
+int isQueueEmpty(Queue *Q)
+{
+    if(Q->front == Q->rear) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+    
+}
+ 
+int EnQueue(Queue *Q, QElemType e)
+{ // 将元素e插入队列Q的队尾，前提是Q未满
+    if((Q->rear + 1) % MAXQSIZE == Q->front) {
+        return -1;
+    }
+    Q->base[Q->rear] = e;
+    Q->rear = (Q->rear + 1) % MAXQSIZE;
+    return 0;
+}
+ 
+int DeQueue(Queue* Q, QElemType* e)
+{ // 若Q非空，队头元素出队，并用e返回其值，成功返回0,失败返回-1
+    if(Q->front == Q->rear) {
+        return -1;
+    }
+    *e = Q->base[Q->front];
+    Q->front = (Q->front + 1) % MAXQSIZE;
+    return 0;
+}
+ 
+ 
+/*
+图的二维数组表示：邻接矩阵，深度优先遍历算法
+*/
+ 
+ 
+void InitArray(int *a, int len, int initVal)
+{
+    int i;
+    for(i = 0; i < len; i++) {
+        a[i] = initVal;
+    }
+}
+ 
+void DeleteArray(int *a)
+{
+    free(a);
+    a = NULL;
+}
+ 
+void DeteleMatrix(int **G, int vexnum)
+{
+    int i;
+    for(i = 0; i < vexnum; i++) {
+        free(G[i]);
+        G[i] = NULL;
+    }
+    free(G);
+}
+ 
+// 在图G中找到顶点v的第一个邻接顶点并返回，若没有则返回-1
+int FirstAdjVex(int** G, int vexnum, int v)
+{
+    int i;
+    for(i = 0; i < vexnum; i++) {
+        if(G[v][i] != -1) {
+            return i;
+        }
+    }
+    return -1;
+}
+ 
+// 在图G中，已经找到顶点v的一个邻接顶点w的基础上，找下一个邻接顶点,若没有则返回-1
+int NextAdjVex(int** G, int vexnum, int v, int w) {
+    int i;
+    // w 已经是找到的邻接点了，所以要从w的下一个开始查找（如果存在下一个节点的话）
+    for(i = w + 1; i < vexnum; i++) {
+        if(G[v][i] != -1) {
+            return i;
+        }
+    }
+    return -1;
+}
+ 
+ 
+void DFS(int** G, int vexnum, int v, int* visited, int* parentsVex, int* depth, int* dis)
+{   // 从v顶点出发，深度优先遍历图G
+    int w;
+    visited[v] = 1;
+ 
+    for(w = FirstAdjVex(G, vexnum, v); w >= 0; w = NextAdjVex(G, vexnum, v, w)) {
+        if(!visited[w]) {
+            parentsVex[w] = v;
+            depth[w] = depth[v] + 1;
+            dis[w] = dis[v] + G[w][v];
+            DFS(G, vexnum, w, visited, parentsVex, depth, dis);
+        }
+    }
+}
+ 
+// 对图G进行深度优先遍历，得到每个节点的父亲节点和每个节点的深度，根节点0的深度为0.
+void DFSTraverse(int** G, int vexnum, int* parentsVex, int* depth, int* dis)
+{
+    int i;
+    int v;
+    int *visited = (int*)malloc(sizeof(int) * vexnum);
+    InitArray(visited, vexnum, 0);
+ 
+    for(v = 0; v < vexnum; v++) {
+        if(!visited[v]) {
+            parentsVex[v] = 0;
+            depth[v] = 0;
+            dis[v] = 0;
+            DFS(G, vexnum, v, visited, parentsVex, depth, dis);  // 对没有访问到了顶点调用DFS
+        }
+    }
+    DeleteArray(visited);
+}
+ 
+ 
+ 
+/*
+2.1.1. 暴力求解LCA,LCA（Least Common Ancestors）
+预处理，先对有根树 T 进行一次 dfs 得到每个结点的父亲和它的深度。
+对于每个查询 LCA(T,u,v) ,我们假设 depth(u)>depth(v) (反正反了可以 swap 一下调过来）,于是我们可以先将 u 暴力跳到与 v 相同深度,
+然后两个结点一起往上走，每次的步长都是 1 （即每次是从结点 u 跳到它的父亲）。直到两个结点相遇位置，相遇的位置就是 LCA(T,u,v) 。
+*/
+ 
+// 在无向无环图G中，或是有根树T，求顶点u和顶点v的最近公共祖先 
+int FindLCA(int* parentsVex, int* depth, int u, int v)
+{
+    int temp;
+    int up, vp;
+    if(u == v) {
+        return u;
+    }
+    if(depth[u] < depth[v]) {
+        // 让v上爬到与u相同的深度
+        temp = parentsVex[v];
+        while(depth[temp] != depth[u]) {
+            temp = parentsVex[temp];
+        }
+        // 此时 depth[temp] == depth[u]
+        up = u;
+        vp = temp;
+    } else if(depth[u] > depth[v]) {
+        // 让u上爬到与v相同的深度
+        temp = parentsVex[u];
+        while(depth[temp] != depth[v]) {
+            temp = parentsVex[temp];
+        }
+        // 此时 depth[temp] == depth[v]
+        up = temp;
+        vp = v;
+    } else { // depth[u] == depth[v] 
+        up = u;
+        vp = v;
+    } 
+ 
+    while(up != vp) {
+        up = parentsVex[up];
+        vp = parentsVex[vp];
+    }
+    //当 up == vp 时，up即u与v的LCA顶点
+    return up;
+}
+ 
+/*
+图的邻接矩阵存储结构时，深度优先遍历算法
+*/
+ 
+ 
+void BSFTraverse(int** G, int vexnum)
+{
+    int u, v, w;
+    int *visited = (int*)malloc(sizeof(int) * vexnum);
+    InitArray(visited, vexnum, 0);
+    Queue* q;
+    InitQueue(q);
+ 
+    for(v = 0; v < vexnum; v++) {
+        if(!visited[v]) {
+            visited[v] = 1;
+            printf("Visit Q vex %d.\n", v + 1);     // 访问图G的v顶点
+            EnQueue(q, v);
+            while(!isQueueEmpty(q)) {
+                DeQueue(q, &u); // 队头元素出队，以u返回其值
+                for(w = FirstAdjVex(G, vexnum, u); w >= 0; w = NextAdjVex(G, vexnum, u, w)) {
+                    if(!visited[w]) {
+                        visited[w] = 1;
+                        printf("Visit Q vex %d.\n", w + 1);     // 访问图G的v顶点
+                        EnQueue(q, w);
+                    }
+                }
+            }
+        }
+    }
+ 
+    DeleteQueue(q);
+    DeleteArray(visited);
+}
+ 
+ 
+ 
+ 
+int main()
+{
+    int N, Q;
+    int ret;
+    int i ,j;
+    int u, v, z;
+    int distance;
+    ret = scanf_s("%d %d", &N, &Q);
+    if(ret != 2) {
+        return -1;
+    }
+ 
+    int **G = (int**)malloc(sizeof(int*) * N);
+    if(G == NULL) {
+        return -1;
+    }
+ 
+    for(i = 0; i < N; i++) {
+        G[i] = (int*)malloc(sizeof(int) * N);
+        if(G[i] == NULL) {
+            for(j = 0; j < i; j++) {
+                free(G[j]);
+            }
+            free(G);
+            return -1;
+        }
+        InitArray(G[i], N, -1);
+    }
+ 
+        for(i = 2; i <= N; i++) {   
+        ret = scanf_s("%d %d %d", &u, &v, &z);
+        if(ret != 3) {
+            return -1;
+        }
+        G[u - 1][v - 1] = G[v - 1][u - 1] = z;
+    }
+ 
+    /*
+        
+    int* parentsVex = (int*)malloc(sizeof(int) * N);
+    int* depth = (int*)malloc(sizeof(int) * N);
+    int* dis = (int*)malloc(sizeof(int) * N);
+    InitArray(parentsVex, N, 0);
+    InitArray(depth, N, 0);
+    InitArray(dis, N, 0);
+    DFSTraverse(G, N, parentsVex, depth, dis);
+    
+    for(i = 0; i < Q; i++) {
+        ret = scanf_s("%d %d", &u, &v);
+        if(ret != 2) {
+            return -1;
+        }
+        distance = dis[u - 1] + dis[v - 1] - 2 * dis[FindLCA(parentsVex, depth, u - 1, v - 1)];
+        printf("%d\n", distance);
+    }
+    DeleteArray(parentsVex);
+    DeleteArray(depth);
+    DeleteArray(dis);
+*/
+ 
+    BSFTraverse(G, N);
+ 
+ 
+ 
+ 
+    DeteleMatrix(G, N);
+    return 0;
+}
