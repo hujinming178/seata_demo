@@ -1,0 +1,143 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define _SQ_DEBUG_ 0
+#define MM "mm"
+#define XX "xx"
+
+enum {
+    ZER0 = 0,
+    ONE = 1,
+    THREE = 3,
+    N = 100,
+    MAXLEN = 220,
+};
+
+typedef struct TagFish {
+    int cnt;
+    int start;
+    int end;
+    int data[MAXLEN];
+} Fish;
+
+Fish g_mm = { 6, 0, 5, { 2, 4, 1, 2, 5, 6 } };
+Fish g_xx = { 6, 0, 5, { 3, 1, 3, 5, 6, 4 } };
+
+int g_fish[MAXLEN];
+int g_cnt = 0;
+int g_gameCnt = 0;
+
+void FindFish(int curr, Fish *fish)
+{
+    int lastIdx = g_cnt - ONE;
+    int idx = lastIdx;
+    int findFlag = ZER0;
+    for (; idx >= 0; --idx) {
+        if (curr == g_fish[idx]) {
+            findFlag = ONE;
+            break;
+        }
+    }
+
+    if (findFlag) {
+        fish->end++;
+        fish->end %= MAXLEN;
+        fish->data[fish->end] = curr;
+        fish->cnt++;
+        g_cnt = idx;
+        for (int i = lastIdx; i >= idx; --i) {
+            fish->end++;
+            fish->end %= MAXLEN;
+            fish->data[fish->end] = g_fish[i];
+            fish->cnt++;
+        }
+    } else {
+        g_fish[g_cnt++] = curr;
+    }
+}
+
+static inline void PrintFish(Fish *fish)
+{
+    if (fish->cnt <= 0) {
+        return;
+    }
+
+    printf("%d", fish->data[fish->start]);
+    for (int i = 1; i < fish->cnt; ++i) {
+        printf(" %d", fish->data[(fish->start + i) % MAXLEN]);
+    }
+}
+
+static inline void PrintGamePool()
+{
+    printf("-----GAMEPOOL------\n");
+    for (int i = 0; i < g_cnt; ++i) {
+        printf("%d ", g_fish[i]);
+    }
+    printf("\n-------------------\n");
+    PrintFish(&g_mm);
+    printf("\n");
+    PrintFish(&g_xx);
+    printf("\n");
+}
+
+void FishingProc()
+{
+    g_gameCnt = 0;
+    g_cnt = 0;
+    int curr;
+    while (g_mm.cnt && g_xx.cnt) {
+#if _SQ_DEBUG_
+        printf("=========Round: %d========\n", g_gameCnt);
+        PrintGamePool();
+        printf("==========================\n");
+#endif
+        curr = g_mm.data[g_mm.start++];
+        g_mm.start %= MAXLEN;
+        g_mm.cnt--;
+        FindFish(curr, &g_mm);
+
+        curr = g_xx.data[g_xx.start++];
+        g_xx.start %= MAXLEN;
+        g_xx.cnt--;
+        FindFish(curr, &g_xx);
+
+        g_gameCnt++;
+    }
+#if _SQ_DEBUG_
+    printf("=========Round: %d========\n", g_gameCnt);
+    PrintGamePool();
+    printf("==========================\n");
+#endif
+
+    printf("%d\n", g_gameCnt);
+    if (g_mm.cnt == ZER0) {
+        printf("%s\n", XX);
+        PrintFish(&g_xx);
+    } else {
+        printf("%s\n", MM);
+        PrintFish(&g_mm);
+    }
+}
+
+int main()
+{
+    int n;
+    int res = scanf_s("%d", &n, THREE);
+    if (res <= ZER0) {
+        return 0;
+    }
+    g_mm.start = g_xx.start = 0;
+    g_mm.end = g_xx.end = n - 1;
+    g_mm.cnt = g_xx.cnt = n;
+    for (int i = 0; res >= 0 && i < n; ++i) {
+        res = scanf_s("%d", &g_mm.data[i], THREE);
+    }
+    for (int i = 0; res >= 0 && i < n; ++i) {
+        res = scanf_s("%d", &g_xx.data[i], THREE);
+    }
+
+    FishingProc();
+
+    return 0;
+}
