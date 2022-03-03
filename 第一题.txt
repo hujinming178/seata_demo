@@ -1,0 +1,107 @@
+import java.util.Arrays;
+import java.util.Scanner;
+public class 素数环 {
+	static int map[]=new int[25];
+	static int vis[]=new int[25];
+	static int n;     //i不可以随便在开头定义啊！！！！！！！！！！！！
+	static int isPrime(int m){//判断素数
+		if(m==0 || m==1)return 0;
+		double k=Math.sqrt(m);
+		int i;
+		for(i=2;i<=k;i++){
+			if(m%i==0)break;
+		}
+		if(i>k)return 1;
+		else return 0;
+	}
+    static void dfs(int cur){
+          if(cur==n){
+        	  if(isPrime(map[1]+map[n])==1){//记得是环！
+        	  for(int i=1;i<n;i++){
+        		  System.out.print(map[i]+" ");
+        	  }
+        	  System.out.println(map[n]);
+        	  }
+        	  return;
+          }
+        	  for(int i=1;i<=n;i++){
+        		  if(vis[i]==0 && isPrime(i+map[cur])==1){
+        			  map[cur+1]=i;
+        			  vis[i]=1;
+        			  dfs(cur+1);
+        			  vis[i]=0;
+        		  }
+        	  }
+    }
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+        Scanner scan=new Scanner(System.in);
+        int num=0;
+        while(scan.hasNext()){
+        	Arrays.fill(vis,0);
+        	n=scan.nextInt();
+        	System.out.println("Case "+(++num)+":");
+        	map[1]=1;
+        	vis[1]=1;
+        	dfs(1);
+        	System.out.println();
+        }
+	}
+}
+
+
+
+
+
+
+
+import java.util.Arrays;
+import java.util.Scanner;
+public class Main {
+	static int map[]=new int[25];
+	static int vis[]=new int[25];
+	static int prime[]=new int[1000];//标记素数数组
+	static int n;
+    static void dfs(int cur){
+          if(cur==n){
+        	  if(prime[map[1]+map[n]]==0){
+        	  for(int i=1;i<=n-1;i++){
+        		  System.out.print(map[i]+" ");
+        	  }
+        	  System.out.println(map[n]);
+        	  }
+        	  return;
+          }
+        	  for(int i=1;i<=n;i++){
+        		  if(vis[i]==0 && prime[i+map[cur]]==0){
+        			  map[cur+1]=i;
+        			  vis[i]=1;
+        			  dfs(cur+1);
+        			  vis[i]=0;
+        		  }
+        	  }       
+    }
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+        Scanner scan=new Scanner(System.in);
+        int num=0;
+        Arrays.fill(prime,0);
+        prime[1]=1;//1不是素数，标记为1
+        for(int i=2;i<Math.sqrt(1000);i++){
+        	if(prime[i]==0){     //如果是素数，其倍数肯定不是素数
+        		for(int j=i+i;j<1000;j+=i)
+        			prime[j]=1;
+        	}
+        }
+        while(scan.hasNext()){
+        	Arrays.fill(vis,0);
+        	n=scan.nextInt();
+        	num++;
+        	System.out.println("Case "+num+":");
+        	map[1]=1;
+        	vis[1]=1;
+        	dfs(1);
+        	System.out.println();
+        }
+	}
+}
