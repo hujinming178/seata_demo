@@ -1,0 +1,60 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <queue>
+using namespace std;
+ 
+char INF = 0x3f3f3f3f; // 初始化时，队列存新的位置position(x,y)的值都为INF,对待放入队列的位置进行判断是否访问过
+int d[3][3] = {0}; // 这里的值是可变的，由输入决定
+typedef pair<int, int> position; // 存新的位置position(x,y)
+ 
+void BFS(vector<vector<char>> &matrix, int x, int y, int Ex, int Ey) {
+    if ((x < 0) || (y < 0) || (x >= matrix.size()) || (y >= matrix[0].size()) || matrix[x][y] == '#') {
+        return;
+    }
+    queue<position> q;
+    q.push(position(x, y));
+    d[x][y] = 0; // 从起点出发将距离设为0，并放入队列首端
+    int dx[4] = {1, 0,-1, 0}; // 左右方向
+    int dy[4] = {0, 1, 0, -1};  // 上下方向
+    int i;
+    int index = 4;
+    while (!q.empty()) {
+        auto p  = q.front();
+        q.pop();
+        for (i = 0; i < 4; i++) {
+            int nx = p.first + dx[i];
+            int ny = p.second + dy[i];
+            if (nx >= 0 && nx < matrix.size() && matrix[nx][ny] != '#' && d[nx][ny] == INF) { // 如果四个新的方向都没访问过
+                q.push(position(nx, ny)); // 往队列中插入新的四个方向
+                d[nx][ny] = d[p.first][p.second] + 1; // 距离加1
+            }
+            if (nx == Ex && ny == Ey) { // 如果到了终点，跳出循环，不再往队列中插入新的四个方向的位置
+                break;
+            }
+        }
+        if (i != index) { break; }
+    }
+}
+ 
+int main()
+{
+    vector<vector<char>> matrix = {{'#', 'S', '#'},{'.', '.', '.'},{'E', '#', '#'}};
+    int startX, startY, endX, endY;
+    for (int i = 0; i < matrix.size(); i++) {
+        for (int j = 0; j < matrix[0].size(); j++) {
+            d[i][j] = INF;
+            if (matrix[i][j] == 'S') {
+                startX = i;
+                startY = j;
+            }
+            if (matrix[i][j] == 'E') {
+                endX = i;
+                endY = j;
+            }
+        }
+    }
+    BFS(matrix, startX, startY, endX, endY); // 广度优先搜索
+    cout << d[endX][endY] << endl; // 寻找到底终点的最短路径
+    return 0;
+}   
